@@ -13,8 +13,16 @@ class GroceryListScreen extends StatelessWidget {
           padding: const EdgeInsets.all(8),
           itemCount: groceryItems.length,
           itemBuilder: (context, position) {
-            return GroceryListItem(groceryItem:groceryItems[position]);
-            
+            // return GroceryListItem(groceryItem:groceryItems[position]);
+            return ListTile(
+              title: Text(groceryItems[position].name),
+              leading: Container(
+                height: 24,
+                width: 24,
+                color: groceryItems[position].category.color,
+              ),
+              trailing: Text(groceryItems[position].quantity.toString()),
+            );
           }),
     );
   }
