@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_shopping_app/data/categories.dart';
+import 'package:flutter_shopping_app/data/dummy_items.dart';
 import 'package:flutter_shopping_app/models/category.dart';
 import 'package:flutter_shopping_app/models/grocery_item.dart';
+import 'package:flutter_shopping_app/network/shopping_list_api_call.dart';
+
 
 class NewItemScreen extends StatefulWidget {
   const NewItemScreen({super.key});
@@ -34,7 +37,11 @@ class NewItemScreenState extends State<NewItemScreen> {
           name: _eneteredName,
           quantity: _eneteredQuantity,
           category: _selectedCategory);
-      Navigator.of(context).pop(newGroceryItem);
+
+        //API Call
+        ShoppingListApiCall().saveGroceryItem(newGroceryItem);
+        
+      Navigator.of(context).pop();
     }
   }
 
