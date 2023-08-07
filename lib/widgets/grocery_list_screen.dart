@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_shopping_app/models/grocery_item.dart';
-import 'package:flutter_shopping_app/network/shopping_list_api_call.dart';
 import 'package:flutter_shopping_app/widgets/new_item_screen.dart';
 
 class GroceryListScreen extends StatefulWidget {
@@ -50,17 +49,25 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
               category: _category.value),
         );
       }
-    // final groceryItemListFromServer = ShoppingListApiCall().getGroceryItems();
+      // final groceryItemListFromServer = ShoppingListApiCall().getGroceryItems();
       setState(() {
         _groceryItems = _loadedItems;
       });
     }
   }
 
-  void _addItem() {
-    Navigator.of(context).push<GroceryItem>(
+  void _addItem() async {
+    final newGroceryItemAdded = await Navigator.of(context).push<GroceryItem>(
       MaterialPageRoute(builder: (ctx) => const NewItemScreen()),
     );
+
+    if (newGroceryItemAdded == null) {
+      return;
+    }
+
+    setState(() {
+      _groceryItems.add(newGroceryItemAdded);
+    });
   }
 
   void _removeItem(GroceryItem groceryItem) {
@@ -69,6 +76,32 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Widget content = const Center(child: Text("No Items in your Groceries.."));
+
+
+    if (_groceryItems.isNotEmpty) {
+      content = ListView.builder(
+        padding: const EdgeInsets.all(8),
+        itemCount: _groceryItems.length,
+        itemBuilder: (context, position) {
+          // return GroceryListItem(groceryItem:groceryItems[position]);
+          return Dismissible(
+            key: ValueKey(_groceryItems[position].id),
+            onDismissed: (direction) => _removeItem(_groceryItems[position]),
+            child: ListTile(
+              title: Text(_groceryItems[position].name),
+              leading: Container(
+                height: 24,
+                width: 24,
+                color: _groceryItems[position].category.color,
+              ),
+              trailing: Text(_groceryItems[position].quantity.toString()),
+            ),
+          );
+        },
+      );
+    }
+
     return Scaffold(
         appBar: AppBar(
           title: const Text("Your Groceries"),
@@ -79,28 +112,6 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
             ),
           ],
         ),
-        body: (_groceryItems.isNotEmpty)
-            ? ListView.builder(
-                padding: const EdgeInsets.all(8),
-                itemCount: _groceryItems.length,
-                itemBuilder: (context, position) {
-                  // return GroceryListItem(groceryItem:groceryItems[position]);
-                  return Dismissible(
-                    key: ValueKey(_groceryItems[position].id),
-                    onDismissed: (direction) =>
-                        _removeItem(_groceryItems[position]),
-                    child: ListTile(
-                      title: Text(_groceryItems[position].name),
-                      leading: Container(
-                        height: 24,
-                        width: 24,
-                        color: _groceryItems[position].category.color,
-                      ),
-                      trailing:
-                          Text(_groceryItems[position].quantity.toString()),
-                    ),
-                  );
-                })
-            : const Center(child: Text("No Items in your Groceries..")));
+        body: content);
   }
 }
