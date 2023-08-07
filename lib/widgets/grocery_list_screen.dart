@@ -23,6 +23,7 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
 
   var _groceryItems = [];
   var _isLoading = true;
+  String? _error ;
 
   void _loadItem() async {
     final Uri url = Uri.https(
@@ -30,8 +31,18 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
         'shopping-list.json');
 
     final response = await http.get(url);
+    print(response.statusCode);
+
+    if (response.statusCode > 400) {
+      setState(() {
+        _error = "Error loading the data.Please try agian later.";
+
+      });
+    }
+    
 
     if (response.statusCode == 200) {
+      _error = null;
       final List<GroceryItem> _loadedItems = [];
 
       final Map<String, dynamic> resData = json.decode(response.body);
@@ -105,6 +116,9 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
       );
     }
 
+    if (_error != null) {
+      content =  Center(child: Text(_error!));
+    }
     return Scaffold(
         appBar: AppBar(
           title: const Text("Your Groceries"),
