@@ -22,24 +22,23 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
   }
 
   var _groceryItems = [];
+  var _isLoading = true;
 
   void _loadItem() async {
     final Uri url = Uri.https(
-      'fluttershoppingapp-42261-default-rtdb.firebaseio.com',
-      'shopping-list.json');
+        'fluttershoppingapp-42261-default-rtdb.firebaseio.com',
+        'shopping-list.json');
 
-     final response = await http.get(url);
+    final response = await http.get(url);
 
     if (response.statusCode == 200) {
       final List<GroceryItem> _loadedItems = [];
 
-      final Map<String, dynamic> resData =
-          json.decode(response.body);
-    
+      final Map<String, dynamic> resData = json.decode(response.body);
 
       for (final item in resData.entries) {
-
-        final _category = categories.entries.firstWhere((catItem) => catItem.value.title == item.value['category']);
+        final _category = categories.entries.firstWhere(
+            (catItem) => catItem.value.title == item.value['category']);
 
         _loadedItems.add(
           GroceryItem(
@@ -52,6 +51,7 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
       // final groceryItemListFromServer = ShoppingListApiCall().getGroceryItems();
       setState(() {
         _groceryItems = _loadedItems;
+        _isLoading = true;
       });
     }
   }
@@ -78,6 +78,9 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
   Widget build(BuildContext context) {
     Widget content = const Center(child: Text("No Items in your Groceries.."));
 
+    if(_isLoading) {
+      content = const Center(child: CircularProgressIndicator());
+    }
 
     if (_groceryItems.isNotEmpty) {
       content = ListView.builder(

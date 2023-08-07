@@ -17,6 +17,7 @@ class NewItemScreen extends StatefulWidget {
 }
 
 class NewItemScreenState extends State<NewItemScreen> {
+  var _isSending = false;
 
   // Create a global key that uniquely identifies the Form widget
   // and allows validation of the form.
@@ -34,6 +35,10 @@ class NewItemScreenState extends State<NewItemScreen> {
     // Validate returns true if the form is valid, or false otherwise.
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+      setState(() {
+        _isSending = true;
+      });
+      
 
       //API Call
       // ShoppingListApiCall().saveGroceryItem(newGroceryItem);
@@ -150,12 +155,17 @@ class NewItemScreenState extends State<NewItemScreen> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: _resetForm,
+                  onPressed: (_isSending) ? null : _resetForm,
                   child: const Text("Reset"),
                 ),
                 ElevatedButton(
                   onPressed: _saveItem,
-                  child: const Text("Add Item"),
+                  child: (_isSending)
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator())
+                      : const Text("Add Item"),
                 )
               ],
             )
