@@ -23,7 +23,7 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
 
   var _groceryItems = [];
   var _isLoading = true;
-  String? _error ;
+  String? _error;
 
   void _loadItem() async {
     final Uri url = Uri.https(
@@ -36,10 +36,8 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
     if (response.statusCode > 400) {
       setState(() {
         _error = "Error loading the data.Please try agian later.";
-
       });
     }
-    
 
     if (response.statusCode == 200) {
       _error = null;
@@ -81,15 +79,35 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
     });
   }
 
-  void _removeItem(GroceryItem groceryItem) {
-    _groceryItems.remove(groceryItem);
+  void _removeItem(GroceryItem groceryItem) async {
+
+    var index = _groceryItems.indexOf(groceryItem);
+    setState(() {
+      _groceryItems.remove(groceryItem);
+    });
+
+
+
+    final Uri url = Uri.https(
+        'flluttershoppingapp-42261-default-rtdb.firebaseio.com',
+        'shopping-list/${groceryItem.id}.json');
+
+    final response = await http.delete(url);
+
+    if (response.statusCode >= 400) {
+      setState(() {
+        _groceryItems.insert(index,groceryItem);
+        SnackBar snackBar = const SnackBar(content: Text("Couldn't delete the item"),);
+        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     Widget content = const Center(child: Text("No Items in your Groceries.."));
 
-    if(_isLoading) {
+    if (_isLoading) {
       content = const Center(child: CircularProgressIndicator());
     }
 
@@ -117,7 +135,7 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
     }
 
     if (_error != null) {
-      content =  Center(child: Text(_error!));
+      content = Center(child: Text(_error!));
     }
     return Scaffold(
         appBar: AppBar(
