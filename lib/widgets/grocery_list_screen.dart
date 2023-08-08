@@ -56,6 +56,12 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
               quantity: item.value['quantity'],
               category: _category.value),
         );
+        if (response.body == 'null') {
+          setState(() {
+            _isLoading = false;
+          });
+          return;
+        }
       }
       // final groceryItemListFromServer = ShoppingListApiCall().getGroceryItems();
       setState(() {
