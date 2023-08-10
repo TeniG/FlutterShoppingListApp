@@ -15,70 +15,50 @@ class GroceryListScreen extends StatefulWidget {
 }
 
 class _GroceryListScreenState extends State<GroceryListScreen> {
+  List<GroceryItem> _groceryItems = [];
+  late Future<List<GroceryItem>> _groceryItemList;
+
   @override
   void initState() {
     super.initState();
-    _loadItem();
+    _groceryItemList = _loadedItem();
   }
 
-  var _groceryItems = [];
-  var _isLoading = true;
-  String? _error;
+  Future<List<GroceryItem>> _loadedItem() async {
+    final Uri url = Uri.https(
+        'fluttershoppingapp-42261-default-rtdb.firebaseio.com',
+        'shopping-list.json');
 
-  void _loadItem() async {
-    try {
-      final Uri url = Uri.https(
-          'fluttershoppingapp-42261-default-rtdb.firebaseio.com',
-          'shopping-list.json');
+    final response = await http.get(url);
 
-      final response = await http.get(url);
-      print("load Items Status code: ${response.statusCode}");
-      print("load Items response : ${response.body}");
+    print("respnse code: ${response.statusCode}");
+    print("respnse body: ${response.body}");
 
-      if (response.statusCode > 400) {
-        setState(() {
-          _isLoading = false;
-          _error = "Error loading the data.Please try agian later.";
-        });
-      }
+    final Map<String, dynamic> resData = json.decode(response.body);
 
-      if (response.statusCode == 200) {
-        _error = null;
-        final List<GroceryItem> _loadedItems = [];
-
-        if (response.body == 'null') {
-          setState(() {
-            _isLoading = false;
-          });
-          return;
-        }
-
-        final Map<String, dynamic> resData = json.decode(response.body);
-
-        for (final item in resData.entries) {
-          final _category = categories.entries.firstWhere(
-              (catItem) => catItem.value.title == item.value['category']);
-
-          _loadedItems.add(
-            GroceryItem(
-                id: item.key,
-                name: item.value['name'],
-                quantity: item.value['quantity'],
-                category: _category.value),
-          );
-        }
-        // final groceryItemListFromServer = ShoppingListApiCall().getGroceryItems();
-        setState(() {
-          _groceryItems = _loadedItems;
-          _isLoading = false;
-        });
-      }
-    } catch (error) {
-      setState(() {
-        _isLoading = false;
-        _error = "Something went wrong!.Please try agian later.";
-      });
+    if (response.statusCode >= 400) {
+      throw Exception("Failed to fetch grocery item. Please try again after sometime.");
     }
+
+    if (response.body == 'null') {
+      return [];
+    }
+
+    final List<GroceryItem> _loadedItems = [];
+    for (final item in resData.entries) {
+      final _category = categories.entries.firstWhere(
+          (catItem) => catItem.value.title == item.value['category']);
+
+      _loadedItems.add(
+        GroceryItem(
+            id: item.key,
+            name: item.value['name'],
+            quantity: item.value['quantity'],
+            category: _category.value),
+      );
+    }
+
+    return _loadedItems;
   }
 
   void _addItem() async {
@@ -121,48 +101,55 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Widget content = const Center(child: Text("No Items in your Groceries.."));
-
-    if (_isLoading) {
-      content = const Center(child: CircularProgressIndicator());
-    }
-
-    if (_groceryItems.isNotEmpty) {
-      content = ListView.builder(
-        padding: const EdgeInsets.all(8),
-        itemCount: _groceryItems.length,
-        itemBuilder: (context, position) {
-          // return GroceryListItem(groceryItem:groceryItems[position]);
-          return Dismissible(
-            key: ValueKey(_groceryItems[position].id),
-            onDismissed: (direction) => _removeItem(_groceryItems[position]),
-            child: ListTile(
-              title: Text(_groceryItems[position].name),
-              leading: Container(
-                height: 24,
-                width: 24,
-                color: _groceryItems[position].category.color,
-              ),
-              trailing: Text(_groceryItems[position].quantity.toString()),
-            ),
-          );
-        },
-      );
-    }
-
-    if (_error != null) {
-      content = Center(child: Text(_error!));
-    }
     return Scaffold(
-        appBar: AppBar(
-          title: const Text("Your Groceries"),
-          actions: [
-            IconButton(
-              onPressed: _addItem,
-              icon: const Icon(Icons.add),
-            ),
-          ],
-        ),
-        body: content);
+      appBar: AppBar(
+        title: const Text("Your Groceries"),
+        actions: [
+          IconButton(
+            onPressed: _addItem,
+            icon: const Icon(Icons.add),
+          ),
+        ],
+      ),
+      body: FutureBuilder(
+          future: _groceryItemList,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return Center(child: Text(snapshot.error.toString()));
+            }
+
+            if (snapshot.data!.isEmpty) {
+              return const Center(child: Text("No Items in your Groceries.."));
+            }
+
+            _groceryItems = snapshot.data!;
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(8),
+              itemCount: snapshot.data!.length,
+              itemBuilder: (context, position) {
+                // return GroceryListItem(groceryItem:groceryItems[position]);
+                return Dismissible(
+                  key: ValueKey(snapshot.data![position].id),
+                  onDismissed: (direction) =>
+                      _removeItem(snapshot.data![position]),
+                  child: ListTile(
+                    title: Text(snapshot.data![position].name),
+                    leading: Container(
+                      height: 24,
+                      width: 24,
+                      color: snapshot.data![position].category.color,
+                    ),
+                    trailing: Text(snapshot.data![position].quantity.toString()),
+                  ),
+                );
+              },
+            );
+          }),
+    );
   }
 }
